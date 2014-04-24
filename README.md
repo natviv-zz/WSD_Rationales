@@ -13,9 +13,11 @@ execfile('wsd_code.py')
 
 
 To get context words for a training sample 
+
 [x[0] for x in sense_instances(senseval.instances('hard.pos'), 'HARD1')[0].context]
 
 To get context POS tags for a training sample
+
 [x[1] for x in sense_instances(senseval.instances('hard.pos'), 'HARD1')[0].context]
 
 Check POS tags using split to see if tagged with raionales.
