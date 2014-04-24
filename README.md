@@ -9,8 +9,9 @@ These appear as <POS_TAG,R> along with the POS TAGS comma separated
 Need to have nltk installed with the senseval-2 corposes.
 
 Within python, run:
-
 execfile('wsd_code.py')
+
+
 To get context words for a training sample 
 [x[0] for x in sense_instances(senseval.instances('hard.pos'), 'HARD1')[0].context]
 
