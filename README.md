@@ -35,3 +35,5 @@ To-do:
 3> Code to combine features
 5> Code for rationale based features
 6> Integrate with scikit-learn SVM and train
+7> Extending rationales to senetence boundaries
+8> Code for automatic generation of rationales
