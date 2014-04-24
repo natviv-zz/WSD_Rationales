@@ -23,7 +23,7 @@ To get context POS tags for a training sample
 Check POS tags using split to see if tagged with raionales.
 A rationale tag appears as <POS_TAG,R>
 
-Based on this tutorail. Code cleaned up for latest vesions of NLTK - issues with FreqDist
+Based on this tutorial. Code cleaned up for latest vesions of NLTK - issues with FreqDist
 http://www.inf.ed.ac.uk/teaching/courses/fnlp/Tutorials/7_WSD/tutorial.html
 
 Running the Naive Bayes classifier
