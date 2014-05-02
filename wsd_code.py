@@ -103,178 +103,6 @@ POS_DICT = {e:i for e,i in zip(POS,range(0,len(POS)))}
 POS_DICT = {'': 0, 'PRP$': 1, 'VBG': 2, 'VBD': 3, 'VB': 26, "''": 5, 'VBP': 6, 'WDT': 7, 'JJ': 8, 'WP': 9, 'VBZ': 10, 'DT': 11, '"': 12, 'RP': 13, '$': 14, 'NN': 15, '(': 16, 'FW': 17, 'POS': 18, '.': 19, 'TO': 20, 'PRP': 21, 'RB': 22, ':': 23, 'NNS': 24, 'NNP': 25, '``': 4, 'WRB': 27, 'CC': 28, 'PDT': 30, 'RBS': 31, 'RBR': 32, 'VBN': 33, 'R': 34, 'EX': 35, 'IN': 36, 'WP$': 37, 'CD': 38, 'MD': 39, 'NNPS': 40, 'h': 41, 'NNP ': 45, 'JJS': 42, 'JJR': 43, 'SYM': 44, 's': 29, 'UH': 46, 'VBP ': 47}
 
 
-""" DICT for context features - use stopwords """
-instances1 = sense_instances(senseval.instances('hard.pos'), 'HARD1')
-voc1 = extract_vocab(instances1[0:101],STOPWORDS,50)
-voc1 = [voc1[i][0] for i in range(0, 50)]
-
-voc1_n = extract_colloc_vocab(instances1[0:101],NEWSTOPWORDS,20)
-voc1_n = [voc1_n[i][0] for i in range(0, 20)]
-
-
-instances2 = sense_instances(senseval.instances('hard.pos'), 'HARD2')
-voc2 = extract_vocab(instances2[0:101],STOPWORDS,50)
-voc2 = [voc2[i][0] for i in range(0, 50)]
-
-voc2_n = extract_colloc_vocab(instances2[0:101],NEWSTOPWORDS,20)
-voc2_n = [voc2_n[i][0] for i in range(0, 20)]
-
-
-instances3 = sense_instances(senseval.instances('hard.pos'), 'HARD3')
-voc3 = extract_vocab(instances3[0:101],STOPWORDS,50)
-voc3 = [voc3[i][0] for i in range(0, 50)]
-
-voc3_n = extract_colloc_vocab(instances3[0:101],NEWSTOPWORDS,20)
-voc3_n = [voc3_n[i][0] for i in range(0, 20)]
-
-hard_voc = set(voc1+voc2+voc3)
-HARDVOC_DICT = {e:i for e,i in zip(hard_voc,range(len(hard_voc)))}
-
-hard_voc_n = set(voc1_n+voc2_n+voc3_n)
-HARDVOC_DICT_N = {e:i for e,i in zip(hard_voc_n,range(len(hard_voc_n)))}
-
-
-
-instances4 = sense_instances(senseval.instances('line.pos'), 'cord')
-voc4 = extract_vocab(instances4[0:101],STOPWORDS,50)
-voc4 = [voc4[i][0] for i in range(0, 50)]
-
-voc4_n = extract_colloc_vocab(instances4[0:101],NEWSTOPWORDS,20)
-voc4_n = [voc4_n[i][0] for i in range(0, 20)]
-
-
-
-
-instances5 = sense_instances(senseval.instances('line.pos'), 'division')
-voc5 = extract_vocab(instances5[0:101],STOPWORDS,50)
-voc5 = [voc5[i][0] for i in range(0, 50)]
-
-voc5_n = extract_colloc_vocab(instances5[0:101],NEWSTOPWORDS,20)
-voc5_n = [voc5_n[i][0] for i in range(0, 20)]
-
-
-instances6 = sense_instances(senseval.instances('line.pos'), 'formation')
-voc6 = extract_vocab(instances6[0:101],STOPWORDS,50)
-voc6 = [voc6[i][0] for i in range(0, 50)]
-
-voc6_n = extract_colloc_vocab(instances6[0:101],NEWSTOPWORDS,20)
-voc6_n = [voc6_n[i][0] for i in range(0, 20)]
-
-
-
-instances7 = sense_instances(senseval.instances('line.pos'), 'product')
-voc7 = extract_vocab(instances7[0:101],STOPWORDS,50)
-voc7 = [voc7[i][0] for i in range(0, 50)]
-
-voc7_n = extract_colloc_vocab(instances7[0:101],NEWSTOPWORDS,20)
-voc7_n = [voc7_n[i][0] for i in range(0, 20)]
-
-
-instances8 = sense_instances(senseval.instances('line.pos'), 'text')
-voc8 = extract_vocab(instances8[0:101],STOPWORDS,50)
-voc8 = [voc8[i][0] for i in range(0, 50)]
-
-voc8_n = extract_colloc_vocab(instances8[0:101],NEWSTOPWORDS,20)
-voc8_n = [voc8_n[i][0] for i in range(0, 20)]
-
-
-instances9 = sense_instances(senseval.instances('line.pos'), 'phone')
-voc9 = extract_vocab(instances9[0:101],STOPWORDS,50)
-voc9 = [voc9[i][0] for i in range(0, 50)]
-
-
-voc9_n = extract_colloc_vocab(instances9[0:101],NEWSTOPWORDS,20)
-voc9_n = [voc9_n[i][0] for i in range(0, 20)]
-
-
-line_voc = set(voc4+voc5+voc6+voc7+voc8+voc9)
-LINEVOC_DICT = {e:i for e,i in zip(line_voc,range(len(line_voc)))}
-
-line_voc_n = set(voc4_n+voc5_n+voc6_n+voc7_n+voc8_n+voc9_n)
-LINEVOC_DICT_N = {e:i for e,i in zip(line_voc_n,range(len(line_voc_n)))}
-
-
-myfile = open("output_line_feat", "w")
-count = 0;
-for i in instances4[0:101]:
-	print i.context
-	con_feat = ann_context_features(i,LINEVOC_DICT,70)
-	pos_feat = ann_pos_features(i,POS_DICT,5)
-	word_feat = ann_context_features(i,LINEVOC_DICT_N,3)
-        feat = con_feat + pos_feat + word_feat
-	print len(feat)
-	myfile.write("cord ")	
-	for item in feat:
-  	    myfile.write("%s " % item)
-	myfile.write("\n")
-	count=count+1
-
-for i in instances5[0:101]:
-	con_feat = ann_context_features(i,LINEVOC_DICT,70)
-	pos_feat = ann_pos_features(i,POS_DICT,5)
-	word_feat = ann_context_features(i,LINEVOC_DICT_N,3)
-        feat = con_feat + pos_feat + word_feat
-	print len(feat)
-	myfile.write("division ")	
-	for item in feat:
-  	    myfile.write("%s " % item)
-	myfile.write("\n")
-	count=count+1
-
-for i in instances3[0:101]:
-	con_feat = ann_context_features(i,LINEVOC_DICT,70)
-	pos_feat = ann_pos_features(i,POS_DICT,5)
-	word_feat = ann_context_features(i,LINEVOC_DICT_N,3)
-        feat = con_feat + pos_feat + word_feat
-	print len(feat)
-	myfile.write("formation ")	
-	for item in feat:
-  	    myfile.write("%s " % item)
-	myfile.write("\n")
-	count=count+1
-
-for i in instances7[0:101]:
-	con_feat = ann_context_features(i,LINEVOC_DICT,70)
-	pos_feat = ann_pos_features(i,POS_DICT,5)
-	word_feat = ann_context_features(i,LINEVOC_DICT_N,3)
-        feat = con_feat + pos_feat + word_feat
-	print len(feat)
-	myfile.write("product ")	
-	for item in feat:
-  	    myfile.write("%s " % item)
-	myfile.write("\n")
-	count=count+1
-
-for i in instances8[0:101]:
-	print i.context
-	con_feat = ann_context_features(i,LINEVOC_DICT,70)
-	pos_feat = ann_pos_features(i,POS_DICT,5)
-	word_feat = ann_context_features(i,LINEVOC_DICT_N,3)
-        feat = con_feat + pos_feat + word_feat
-	print len(feat)
-	myfile.write("text ")	
-	for item in feat:
-  	    myfile.write("%s " % item)
-	myfile.write("\n")
-	count=count+1
-
-for i in instances9[0:101]:
-	con_feat = ann_context_features(i,LINEVOC_DICT,70)
-	pos_feat = ann_pos_features(i,POS_DICT,5)
-	word_feat = ann_context_features(i,LINEVOC_DICT_N,3)
-        feat = con_feat + pos_feat + word_feat
-	print len(feat)
-	myfile.write("phone ")	
-	for item in feat:
-  	    myfile.write("%s " % item)
-	myfile.write("\n")
-	count=count+1
-
-	
-print count
-""" DICT for word features - dont use stopwords """ 
-
-
 def wsd_context_features(instance, vocab, dist=10):
     features = {}
     ind = instance.position
@@ -296,18 +124,18 @@ def ann_context_features(instance, vocab, dist=10):
     features = [0]*len(vocab)
     ind = instance.position
     con = instance.context
-    """rationale = []	
+    rationale = []	
     for (word,pos) in con:
 	if len(pos.split(","))==1:
 		rationale.append(word)
-	"""
+
 	
     for i in range(max(0, ind-dist), ind):
-	if con[i][0] in vocab:
+	if con[i][0] in vocab and con[i][0] in rationale:
         	features[vocab[con[i][0]]] = 1
 
     for i in range(ind+1, min(ind+dist+1, len(con))):
-	if con[i][0] in vocab:
+	if con[i][0] in vocab and con[i][0] in rationale:
         	features[vocab[con[i][0]]] = 1
 
  
@@ -319,19 +147,19 @@ def ann_pos_features(instance, pos_dict, dist=3):
     features = [0]*len(pos_dict)
     ind = instance.position
     con = instance.context
-    """rationale = []
+    rationale = []
     for (word,pos) in con:
 	if len(pos.split(","))==1:
 		rationale.append(word)
-	"""
+
     
 
     for i in range(max(0, ind-dist), ind):
-	if con[i][1].split(',')[0] in pos_dict:
+	if con[i][1].split(',')[0] in pos_dict and con[i][0] in rationale:
         	features[pos_dict[con[i][1].split(',')[0]]] = 1
 
     for i in range(ind+1, min(ind+dist+1, len(con))):
-	if con[i][1].split(',')[0] in pos_dict:
+	if con[i][1].split(',')[0] in pos_dict and con[i][0] in rationale:
         	features[pos_dict[con[i][1].split(',')[0]]] = 1
 
  
@@ -414,6 +242,242 @@ def extract_colloc_vocab(instances, stopwords=NEWSTOPWORDS, n=50):
     return sorted_feat[-(n+1):]	
         
     
+
+
+
+
+
+
+
+
+
+
+""" DICT for context features - use stopwords """
+
+
+instances1 = sense_instances(senseval.instances('hard.pos'), 'HARD1')
+voc1 = extract_vocab(instances1[0:201],STOPWORDS,50)
+voc1 = [voc1[i][0] for i in range(0, 50)]
+
+voc1_n = extract_colloc_vocab(instances1[0:201],NEWSTOPWORDS,40)
+voc1_n = [voc1_n[i][0] for i in range(0, 40)]
+
+
+instances2 = sense_instances(senseval.instances('hard.pos'), 'HARD2')
+voc2 = extract_vocab(instances2[0:201],STOPWORDS,50)
+voc2 = [voc2[i][0] for i in range(0, 50)]
+
+voc2_n = extract_colloc_vocab(instances2[0:201],NEWSTOPWORDS,40)
+voc2_n = [voc2_n[i][0] for i in range(0, 40)]
+
+
+instances3 = sense_instances(senseval.instances('hard.pos'), 'HARD3')
+voc3 = extract_vocab(instances3[0:201],STOPWORDS,50)
+voc3 = [voc3[i][0] for i in range(0, 50)]
+
+voc3_n = extract_colloc_vocab(instances3[0:201],NEWSTOPWORDS,40)
+voc3_n = [voc3_n[i][0] for i in range(0, 40)]
+
+hard_voc = set(voc1+voc2+voc3)
+HARDVOC_DICT = {e:i for e,i in zip(hard_voc,range(len(hard_voc)))}
+
+hard_voc_n = set(voc1_n+voc2_n+voc3_n)
+HARDVOC_DICT_N = {e:i for e,i in zip(hard_voc_n,range(len(hard_voc_n)))}
+
+
+
+instances4 = sense_instances(senseval.instances('line.pos'), 'cord')
+voc4 = extract_vocab(instances4[0:101],STOPWORDS,50)
+voc4 = [voc4[i][0] for i in range(0, 50)]
+
+voc4_n = extract_colloc_vocab(instances4[0:101],NEWSTOPWORDS,40)
+voc4_n = [voc4_n[i][0] for i in range(0, 40)]
+
+
+
+
+instances5 = sense_instances(senseval.instances('line.pos'), 'division')
+voc5 = extract_vocab(instances5[0:101],STOPWORDS,50)
+voc5 = [voc5[i][0] for i in range(0, 50)]
+
+voc5_n = extract_colloc_vocab(instances5[0:101],NEWSTOPWORDS,40)
+voc5_n = [voc5_n[i][0] for i in range(0, 40)]
+
+
+instances6 = sense_instances(senseval.instances('line.pos'), 'formation')
+voc6 = extract_vocab(instances6[0:101],STOPWORDS,50)
+voc6 = [voc6[i][0] for i in range(0, 50)]
+
+voc6_n = extract_colloc_vocab(instances6[0:101],NEWSTOPWORDS,40)
+voc6_n = [voc6_n[i][0] for i in range(0, 40)]
+
+
+
+instances7 = sense_instances(senseval.instances('line.pos'), 'product')
+voc7 = extract_vocab(instances7[0:101],STOPWORDS,50)
+voc7 = [voc7[i][0] for i in range(0, 50)]
+
+voc7_n = extract_colloc_vocab(instances7[0:101],NEWSTOPWORDS,40)
+voc7_n = [voc7_n[i][0] for i in range(0, 40)]
+
+
+instances8 = sense_instances(senseval.instances('line.pos'), 'text')
+voc8 = extract_vocab(instances8[0:101],STOPWORDS,50)
+voc8 = [voc8[i][0] for i in range(0, 50)]
+
+voc8_n = extract_colloc_vocab(instances8[0:101],NEWSTOPWORDS,40)
+voc8_n = [voc8_n[i][0] for i in range(0, 40)]
+
+
+instances9 = sense_instances(senseval.instances('line.pos'), 'phone')
+voc9 = extract_vocab(instances9[0:101],STOPWORDS,50)
+voc9 = [voc9[i][0] for i in range(0, 50)]
+
+
+voc9_n = extract_colloc_vocab(instances9[0:101],NEWSTOPWORDS,40)
+voc9_n = [voc9_n[i][0] for i in range(0, 40)]
+
+
+line_voc = set(voc4+voc5+voc6+voc7+voc8+voc9)
+LINEVOC_DICT = {e:i for e,i in zip(line_voc,range(len(line_voc)))}
+
+line_voc_n = set(voc4_n+voc5_n+voc6_n+voc7_n+voc8_n+voc9_n)
+LINEVOC_DICT_N = {e:i for e,i in zip(line_voc_n,range(len(line_voc_n)))}
+
+
+myfile = open("output_line_feat_rtnls", "w")
+count = 0;
+for i in instances4[0:101]:
+	con_feat = ann_context_features(i,LINEVOC_DICT,70)
+	pos_feat = ann_pos_features(i,POS_DICT,5)
+	word_feat = ann_context_features(i,LINEVOC_DICT_N,5)
+        feat = con_feat + pos_feat + word_feat
+	print len(feat)
+	myfile.write("1cord ")	
+	for item in feat:
+  	    myfile.write("%s " % item)
+	myfile.write("\n")
+	count=count+1
+
+for i in instances5[0:101]:
+	con_feat = ann_context_features(i,LINEVOC_DICT,70)
+	pos_feat = ann_pos_features(i,POS_DICT,5)
+	word_feat = ann_context_features(i,LINEVOC_DICT_N,5)
+        feat = con_feat + pos_feat + word_feat
+	print len(feat)
+	myfile.write("2division ")	
+	for item in feat:
+  	    myfile.write("%s " % item)
+	myfile.write("\n")
+	count=count+1
+
+for i in instances6[0:101]:
+	con_feat = ann_context_features(i,LINEVOC_DICT,70)
+	pos_feat = ann_pos_features(i,POS_DICT,5)
+	word_feat = ann_context_features(i,LINEVOC_DICT_N,5)
+        feat = con_feat + pos_feat + word_feat
+	print len(feat)
+	myfile.write("3formation ")	
+	for item in feat:
+  	    myfile.write("%s " % item)
+	myfile.write("\n")
+	count=count+1
+
+for i in instances7[0:101]:
+	con_feat = ann_context_features(i,LINEVOC_DICT,70)
+	pos_feat = ann_pos_features(i,POS_DICT,5)
+	word_feat = ann_context_features(i,LINEVOC_DICT_N,5)
+        feat = con_feat + pos_feat + word_feat
+	print len(feat)
+	myfile.write("4product ")	
+	for item in feat:
+  	    myfile.write("%s " % item)
+	myfile.write("\n")
+	count=count+1
+
+for i in instances8[0:101]:
+	con_feat = ann_context_features(i,LINEVOC_DICT,70)
+	pos_feat = ann_pos_features(i,POS_DICT,5)
+	word_feat = ann_context_features(i,LINEVOC_DICT_N,5)
+        feat = con_feat + pos_feat + word_feat
+	print len(feat)
+	myfile.write("5text ")	
+	for item in feat:
+  	    myfile.write("%s " % item)
+	myfile.write("\n")
+	count=count+1
+
+for i in instances9[0:101]:
+	con_feat = ann_context_features(i,LINEVOC_DICT,70)
+	pos_feat = ann_pos_features(i,POS_DICT,5)
+	word_feat = ann_context_features(i,LINEVOC_DICT_N,5)
+        feat = con_feat + pos_feat + word_feat
+	print len(feat)
+	myfile.write("6phone ")	
+	for item in feat:
+  	    myfile.write("%s " % item)
+	myfile.write("\n")
+	count=count+1
+
+print count
+
+
+myfile.close()
+
+myfile = open("output_hard_feat_rtnls", "w")
+count = 0;
+
+
+for i in instances1[0:201]:
+	con_feat = ann_context_features(i,HARDVOC_DICT,70)
+	pos_feat = ann_pos_features(i,POS_DICT,5)
+	word_feat = ann_context_features(i,HARDVOC_DICT_N,5)
+        feat = con_feat + pos_feat + word_feat
+	print len(feat)
+	myfile.write("1HARD ")	
+	for item in feat:
+  	    myfile.write("%s " % item)
+	myfile.write("\n")
+	count=count+1
+
+for i in instances2[0:201]:
+	con_feat = ann_context_features(i,HARDVOC_DICT,70)
+	pos_feat = ann_pos_features(i,POS_DICT,5)
+	word_feat = ann_context_features(i,HARDVOC_DICT_N,5)
+        feat = con_feat + pos_feat + word_feat
+	print len(feat)
+	myfile.write("2HARD ")	
+	for item in feat:
+  	    myfile.write("%s " % item)
+	myfile.write("\n")
+	count=count+1
+
+for i in instances3[0:201]:
+	con_feat = ann_context_features(i,HARDVOC_DICT,70)
+	pos_feat = ann_pos_features(i,POS_DICT,5)
+	word_feat = ann_context_features(i,HARDVOC_DICT_N,5)
+        feat = con_feat + pos_feat + word_feat
+	print len(feat)
+	myfile.write("3HARD ")	
+	for item in feat:
+  	    myfile.write("%s " % item)
+	myfile.write("\n")
+	count=count+1
+
+
+
+
+
+
+
+
+
+	
+print count
+""" DICT for word features - dont use stopwords """ 
+
+
+
 ##def wst_classifier(trainer, word, features,number=300):
 ##    print "Reading data..."
 ##    global _inst_cache
