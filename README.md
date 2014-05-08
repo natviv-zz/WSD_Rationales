@@ -37,3 +37,17 @@ To-do:
 6> Integrate with scikit-learn SVM and train
 7> Extending rationales to senetence boundaries
 8> Code for automatic generation of rationales
+
+
+UPDATED README :
+To run Mallet
+java -cp "mallet/class:mallet/lib/mallet-deps.jar" cc.mallet.fst.SimpleTagger
+  --train true --model-file modelfile  hard1_train
+
+java -cp "mallet/class:mallet/lib/mallet-deps.jar" cc.mallet.fst.SimpleTagger --model-file modelfile hard1_test > output
+
+
+paste hard1_test output | awk '{print $2,$1,$3}'
+
+
+
