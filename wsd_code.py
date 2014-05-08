@@ -3,48 +3,23 @@ from __future__ import division
 import nltk
 import random
 import operator
+import gensim
 from nltk.corpus import senseval
 from nltk.classify import accuracy, NaiveBayesClassifier, MaxentClassifier
+from nltk.stem.wordnet import WordNetLemmatizer
 from collections import defaultdict
+from collections import Counter
 
-# The following shows how the senseval corpus consists of instances, where each instance
-# consists of a target word (and its tag), it position in the sentence it appeared in
-# within the corpus (that position being word position, minus punctuation), and the context,
-# which is the words in the sentence plus their tags.
-#
-# senseval.instances()[:1]
-# [SensevalInstance(word='hard-a', position=20, context=[('``', '``'), ('he', 'PRP'),
-# ('may', 'MD'), ('lose', 'VB'), ('all', 'DT'), ('popular', 'JJ'), ('support', 'NN'),
-#Â (',', ','), ('but', 'CC'), ('someone', 'NN'), ('has', 'VBZ'), ('to', 'TO'),
-# ('kill', 'VB'), ('him', 'PRP'), ('to', 'TO'), ('defeat', 'VB'), ('him', 'PRP'),
-# ('and', 'CC'), ('that', 'DT'), ("'s", 'VBZ'), ('hard', 'JJ'), ('to', 'TO'), ('do', 'VB'),
-# ('.', '.'), ("''", "''")], senses=('HARD1',))]
+#Code based on FNLP tutorial and modified to use with NLTK 3.0. Baseline tests code is the same.
 
 def senses(word):
-    """
-    This takes a target word from senseval-2 (find out what the possible
-    are by running senseval.fileides()), and it returns the list of possible 
-    senses for the word
-    """
     return list(set(i.senses[0] for i in senseval.instances(word)))
 
 
     
 
 def sense_instances(instances, sense):
-    """
-    This returns the list of instances in instances that have the sense sense
-    """
     return [instance for instance in instances if instance.senses[0]==sense]
-
-# >>> sense3 = sense_instances(senseval.instances('hard.pos'), 'HARD3')
-# >>> sense3[:2]
-# [SensevalInstance(word='hard-a', position=15,
-#  context=[('my', 'PRP$'), ('companion', 'NN'), ('enjoyed', 'VBD'), ('a', 'DT'), ('healthy', 'JJ'), ('slice', 'NN'), ('of', 'IN'), ('the', 'DT'), ('chocolate', 'NN'), ('mousse', 'NN'), ('cake', 'NN'), (',', ','), ('made', 'VBN'), ('with', 'IN'), ('a', 'DT'), ('hard', 'JJ'), ('chocolate', 'NN'), ('crust', 'NN'), (',', ','), ('topping', 'VBG'), ('a', 'DT'), ('sponge', 'NN'), ('cake', 'NN'), ('with', 'IN'), ('either', 'DT'), ('strawberry', 'NN'), ('or', 'CC'), ('raspberry', 'JJ'), ('on', 'IN'), ('the', 'DT'), ('bottom', 'NN'), ('.', '.')],
-#  senses=('HARD3',)),
-#  SensevalInstance(word='hard-a', position=5,
-#  context=[('``', '``'), ('i', 'PRP'), ('feel', 'VBP'), ('that', 'IN'), ('the', 'DT'), ('hard', 'JJ'), ('court', 'NN'), ('is', 'VBZ'), ('my', 'PRP$'), ('best', 'JJS'), ('surface', 'NN'), ('overall', 'JJ'), (',', ','), ('"', '"'), ('courier', 'NNP'), ('said', 'VBD'), ('.', '.')],
-# senses=('HARD3',))]
 
 
 _inst_cache = {}
@@ -60,8 +35,8 @@ STOPWORDS = ['.', ',', '?', '"', '``', "''", "'", '--', '-', ':', ';', '(',
              'what', 'when', 'where', 'which', 'who', 'will', 'with', 'years', 'you',
              'your']
 
-NEWSTOPWORDS = ['.', ',', '?', '"', '``', "''", "'", '--', '-', ':', ';', '(',
-             ')','and','as','them','their','was','what','when','you','your',"'ll",'its','s','n','which','will','an','i','a','my','if','it','where','will','that','they','there','the']
+NEWSTOPWORDS = [',', '?', '"', '``', "''", "'", '--', '-', ';', '(',
+             ')','and','as','them','their','was','what','when','you','your','its','n','which','will','an','a','my','if','it','where','will','that','they','there','the']
 
 NO_STOPWORDS = []
 
@@ -103,40 +78,28 @@ POS_DICT = {e:i for e,i in zip(POS,range(0,len(POS)))}
 POS_DICT = {'': 0, 'PRP$': 1, 'VBG': 2, 'VBD': 3, 'VB': 26, "''": 5, 'VBP': 6, 'WDT': 7, 'JJ': 8, 'WP': 9, 'VBZ': 10, 'DT': 11, '"': 12, 'RP': 13, '$': 14, 'NN': 15, '(': 16, 'FW': 17, 'POS': 18, '.': 19, 'TO': 20, 'PRP': 21, 'RB': 22, ':': 23, 'NNS': 24, 'NNP': 25, '``': 4, 'WRB': 27, 'CC': 28, 'PDT': 30, 'RBS': 31, 'RBR': 32, 'VBN': 33, 'R': 34, 'EX': 35, 'IN': 36, 'WP$': 37, 'CD': 38, 'MD': 39, 'NNPS': 40, 'h': 41, 'NNP ': 45, 'JJS': 42, 'JJR': 43, 'SYM': 44, 's': 29, 'UH': 46, 'VBP ': 47}
 
 
-def wsd_context_features(instance, vocab, dist=10):
-    features = {}
-    ind = instance.position
-    con = instance.context
-    for i in range(max(0, ind-dist), ind):
-        j = ind-i
-        features['left-context-word-%s(%s)' % (j, con[i][0])] = True
+lmtzr = WordNetLemmatizer()
 
-    for i in range(ind+1, min(ind+dist+1, len(con))):
-        j = i-ind
-        features['right-context-word-%s(%s)' % (j, con[i][0])] = True
-
- 
-    features['word'] = instance.word
-    features['pos'] = con[1][1]
-    return features
 
 def ann_context_features(instance, vocab, dist=10):
     features = [0]*len(vocab)
     ind = instance.position
     con = instance.context
-    rationale = []	
+    rationale = []
+		
     for (word,pos) in con:
-	if len(pos.split(","))==1:
-		rationale.append(word)
-
-	
+	if len(pos.split(","))==1 or pos.split(",")[1] == 'NR':
+		rationale.append(lmtzr.lemmatize(word))
+    
+					
+		
     for i in range(max(0, ind-dist), ind):
-	if con[i][0] in vocab and con[i][0] in rationale:
-        	features[vocab[con[i][0]]] = 1
+	if lmtzr.lemmatize(con[i][0]) in vocab:
+        	features[vocab[lmtzr.lemmatize(con[i][0])][1]] = vocab[lmtzr.lemmatize(con[i][0])][0]/(ind - i)
 
     for i in range(ind+1, min(ind+dist+1, len(con))):
-	if con[i][0] in vocab and con[i][0] in rationale:
-        	features[vocab[con[i][0]]] = 1
+	if lmtzr.lemmatize(con[i][0]) in vocab:
+        	features[vocab[lmtzr.lemmatize(con[i][0])][1]] = vocab[lmtzr.lemmatize(con[i][0])][0]/(i - ind)
 
  
     #features['word'] = instance.word
@@ -147,19 +110,21 @@ def ann_pos_features(instance, pos_dict, dist=3):
     features = [0]*len(pos_dict)
     ind = instance.position
     con = instance.context
+
     rationale = []
     for (word,pos) in con:
-	if len(pos.split(","))==1:
-		rationale.append(word)
+	
+	if len(pos.split(","))==1 or pos.split(",")[1] == 'NR':
+		rationale.append(lmtzr.lemmatize(word))
 
     
 
     for i in range(max(0, ind-dist), ind):
-	if con[i][1].split(',')[0] in pos_dict and con[i][0] in rationale:
+	if con[i][1].split(',')[0] in pos_dict:
         	features[pos_dict[con[i][1].split(',')[0]]] = 1
 
     for i in range(ind+1, min(ind+dist+1, len(con))):
-	if con[i][1].split(',')[0] in pos_dict and con[i][0] in rationale:
+	if con[i][1].split(',')[0] in pos_dict:
         	features[pos_dict[con[i][1].split(',')[0]]] = 1
 
  
@@ -169,29 +134,7 @@ def ann_pos_features(instance, pos_dict, dist=3):
 
 
 
-def wsd_word_features(instance, vocab, dist=3):
-    """
-    Create a featureset where every key returns False unless it occurs in the
-    instance's context
-    """
-    features = defaultdict(lambda:False)
-    features['alwayson'] = True
-    #cur_words = [w for (w, pos) in i.context]
-    try:
-        for(w, pos) in instance.context:
-            if w in vocab:
-                features[w] = True
-    except ValueError:
-        pass
-    return features
-
-
 def extract_vocab(instances, stopwords=STOPWORDS, n=300):
-    """
-    Given a list of senseval instances, return a list of the n most frequent words that
-    appear in the context of instances.  The context is the sentence that the target word
-    appeared in within the corpus.
-    """
     #cfd = nltk.ConditionalFreqDist()
     fd = nltk.FreqDist()
     for i in instances:
@@ -201,52 +144,84 @@ def extract_vocab(instances, stopwords=STOPWORDS, n=300):
         except ValueError:
             pass
         for word in set(words) - set(stopwords):
+	    word = lmtzr.lemmatize(word)	
             fd[word]+=1 
             #for sense in i.senses:
                 #cfd[sense].inc(word)
     #return sorted(fd.keys()[:n+1])
-    feat1 = fd.items()
+    feat1 = fd.items()	
     b = {feat1[i][0]: feat1[i][1] for i in range(0, len(feat1))}
     sorted_feat = sorted(b.iteritems(), key=operator.itemgetter(1))
-    """print sorted_feat[n+1:]"""	
     return sorted_feat[-(n+1):]	
 
 def extract_colloc_vocab(instances, stopwords=NEWSTOPWORDS, n=50):
-    """
-    Given a list of senseval instances, return a list of the n most frequent words that
-    appears in its context (i.e., the sentence with the target word in), output is in order
-    of frequency and includes also the number of instances in which that key appears in the
-    context of instances.
-    """
     #cfd = nltk.ConditionalFreqDist()
     fd = nltk.FreqDist()
     for i in instances:
         (target, suffix) = i.word.split('-')
 	ind = i.position
 	con = i.context
-	dist = 3
+	dist = 5
         try:
             words = [w for (w, pos) in i.context if not w == target]
         except ValueError:
             pass
         for j in range(max(1, ind-dist), ind):
-	    if con[j][0] not in stopwords:		
-            	fd[con[j][0]]+=1	
+	    if con[j][0] not in stopwords:
+		word = lmtzr.lemmatize(con[j][0])		
+            	fd[word]+=1	
 
 	for j in range(ind+1, min(ind+dist+1, len(con))):
 	    if con[j][0] not in stopwords:
-            	fd[con[j][0]]+=1
+            	word = lmtzr.lemmatize(con[j][0])		
+            	fd[word]+=1
     feat1 = fd.items()
     b = {feat1[i][0]: feat1[i][1] for i in range(0, len(feat1))}
     sorted_feat = sorted(b.iteritems(), key=operator.itemgetter(1))
     return sorted_feat[-(n+1):]	
         
     
+def extract_rationale_vocab(instances, stopwords=NEWSTOPWORDS, n=50):
+  
+    #cfd = nltk.ConditionalFreqDist()
+    fd = nltk.FreqDist()
+    for i in instances:
+        (target, suffix) = i.word.split('-')
+	ind = i.position
+	con = i.context
+	dist = 100
+        try:
+            words = [w for (w, pos) in i.context if not w == target]
+        except ValueError:
+            pass
+        for j in range(max(1, ind-dist), ind):
+	    if con[j][0] not in stopwords and len(con[j][1].split(","))>1:
+		word = lmtzr.lemmatize(con[j][0])		
+            	fd[word]+=1	
+
+	for j in range(ind+1, min(ind+dist+1, len(con))):
+	    if con[j][0] not in stopwords and len(con[j][1].split(","))>1:
+            	word = lmtzr.lemmatize(con[j][0])		
+            	fd[word]+=1
+    feat1 = fd.items()
+    b = {feat1[i][0]: feat1[i][1] for i in range(0, len(feat1))}
+    sorted_feat = sorted(b.iteritems(), key=operator.itemgetter(1))
+    return sorted_feat[-(n+1):]	
+        
 
 
+def normalize_dict_vocab(voc1):
+	voc1 = dict(voc1)
+	total = sum(voc1.values())
+	for key, value in voc1.items():
+    		voc1[key] = value / total
+	return voc1
 
-
-
+instances1 = sense_instances(senseval.instances('hard.pos'), 'HARD1')
+sentences = []
+for i in range(0,len(instances1)):
+	sentences.append([x[0] for x in instances1[i].context])
+model1 = gensim.models.Word2Vec(sentences)
 
 
 
@@ -254,165 +229,348 @@ def extract_colloc_vocab(instances, stopwords=NEWSTOPWORDS, n=50):
 
 """ DICT for context features - use stopwords """
 
-
+"""
 instances1 = sense_instances(senseval.instances('hard.pos'), 'HARD1')
-voc1 = extract_vocab(instances1[0:201],STOPWORDS,50)
-voc1 = [voc1[i][0] for i in range(0, 50)]
-
-voc1_n = extract_colloc_vocab(instances1[0:201],NEWSTOPWORDS,40)
-voc1_n = [voc1_n[i][0] for i in range(0, 40)]
-
+voc1 = extract_vocab(instances1,STOPWORDS,50)
+voc1 = normalize_dict_vocab(voc1)
 
 instances2 = sense_instances(senseval.instances('hard.pos'), 'HARD2')
-voc2 = extract_vocab(instances2[0:201],STOPWORDS,50)
-voc2 = [voc2[i][0] for i in range(0, 50)]
-
-voc2_n = extract_colloc_vocab(instances2[0:201],NEWSTOPWORDS,40)
-voc2_n = [voc2_n[i][0] for i in range(0, 40)]
-
+voc2 = extract_vocab(instances2,STOPWORDS,50)
+voc2 = normalize_dict_vocab(voc2)
 
 instances3 = sense_instances(senseval.instances('hard.pos'), 'HARD3')
-voc3 = extract_vocab(instances3[0:201],STOPWORDS,50)
-voc3 = [voc3[i][0] for i in range(0, 50)]
+voc3 = extract_vocab(instances3,STOPWORDS,50)
+voc3 = normalize_dict_vocab(voc3)
 
-voc3_n = extract_colloc_vocab(instances3[0:201],NEWSTOPWORDS,40)
-voc3_n = [voc3_n[i][0] for i in range(0, 40)]
+hard_voc = dict(Counter(voc1)+Counter(voc2)+Counter(voc3))
+maxim = max(hard_voc.values())
+for key, value in hard_voc.items():
+    		hard_voc[key] = value / maxim
 
-hard_voc = set(voc1+voc2+voc3)
-HARDVOC_DICT = {e:i for e,i in zip(hard_voc,range(len(hard_voc)))}
+HARDVOC_DICT = {e:(i,j) for e,i,j in zip(hard_voc.keys(),hard_voc.values(),range(len(hard_voc)))}
 
-hard_voc_n = set(voc1_n+voc2_n+voc3_n)
-HARDVOC_DICT_N = {e:i for e,i in zip(hard_voc_n,range(len(hard_voc_n)))}
 
+voc1_n = extract_colloc_vocab(instances1,NEWSTOPWORDS,40)
+voc1_n = normalize_dict_vocab(voc1_n)
+
+voc2_n = extract_colloc_vocab(instances2,NEWSTOPWORDS,40)
+voc2_n = normalize_dict_vocab(voc2_n)
+
+voc3_n = extract_colloc_vocab(instances3,NEWSTOPWORDS,40)
+voc3_n = normalize_dict_vocab(voc3_n)
+
+hard_voc_n = dict(Counter(voc1_n)+Counter(voc2_n)+Counter(voc3_n))
+maxim = max(hard_voc_n.values())
+for key, value in hard_voc_n.items():
+    		hard_voc_n[key] = value / maxim
+
+HARDVOC_DICT_N = {e:(i,j) for e,i,j in zip(hard_voc_n.keys(),hard_voc_n.values(),range(len(hard_voc_n)))}
+"""
 
 
 instances4 = sense_instances(senseval.instances('line.pos'), 'cord')
-voc4 = extract_vocab(instances4[0:101],STOPWORDS,50)
-voc4 = [voc4[i][0] for i in range(0, 50)]
-
-voc4_n = extract_colloc_vocab(instances4[0:101],NEWSTOPWORDS,40)
-voc4_n = [voc4_n[i][0] for i in range(0, 40)]
-
-
-
+voc1 = extract_vocab(instances4,STOPWORDS,50)
+voc1 = normalize_dict_vocab(voc1)
 
 instances5 = sense_instances(senseval.instances('line.pos'), 'division')
-voc5 = extract_vocab(instances5[0:101],STOPWORDS,50)
-voc5 = [voc5[i][0] for i in range(0, 50)]
-
-voc5_n = extract_colloc_vocab(instances5[0:101],NEWSTOPWORDS,40)
-voc5_n = [voc5_n[i][0] for i in range(0, 40)]
-
+voc2 = extract_vocab(instances5,STOPWORDS,50)
+voc2 = normalize_dict_vocab(voc2)
 
 instances6 = sense_instances(senseval.instances('line.pos'), 'formation')
-voc6 = extract_vocab(instances6[0:101],STOPWORDS,50)
-voc6 = [voc6[i][0] for i in range(0, 50)]
-
-voc6_n = extract_colloc_vocab(instances6[0:101],NEWSTOPWORDS,40)
-voc6_n = [voc6_n[i][0] for i in range(0, 40)]
-
-
+voc3 = extract_vocab(instances6,STOPWORDS,50)
+voc3 = normalize_dict_vocab(voc3)
 
 instances7 = sense_instances(senseval.instances('line.pos'), 'product')
-voc7 = extract_vocab(instances7[0:101],STOPWORDS,50)
-voc7 = [voc7[i][0] for i in range(0, 50)]
-
-voc7_n = extract_colloc_vocab(instances7[0:101],NEWSTOPWORDS,40)
-voc7_n = [voc7_n[i][0] for i in range(0, 40)]
-
+voc4 = extract_vocab(instances7,STOPWORDS,50)
+voc4 = normalize_dict_vocab(voc4)
 
 instances8 = sense_instances(senseval.instances('line.pos'), 'text')
-voc8 = extract_vocab(instances8[0:101],STOPWORDS,50)
-voc8 = [voc8[i][0] for i in range(0, 50)]
-
-voc8_n = extract_colloc_vocab(instances8[0:101],NEWSTOPWORDS,40)
-voc8_n = [voc8_n[i][0] for i in range(0, 40)]
-
+voc5 = extract_vocab(instances8,STOPWORDS,50)
+voc5 = normalize_dict_vocab(voc5)
 
 instances9 = sense_instances(senseval.instances('line.pos'), 'phone')
-voc9 = extract_vocab(instances9[0:101],STOPWORDS,50)
-voc9 = [voc9[i][0] for i in range(0, 50)]
+voc6 = extract_vocab(instances9,STOPWORDS,50)
+voc6 = normalize_dict_vocab(voc6)
+
+line_voc = dict(Counter(voc1)+Counter(voc2)+Counter(voc3)+Counter(voc4)+Counter(voc5)+Counter(voc6))
+maxim = max(line_voc.values())
+for key, value in line_voc.items():
+    		line_voc[key] = value / maxim
+
+LINEVOC_DICT = {e:(i,j) for e,i,j in zip(line_voc.keys(),line_voc.values(),range(len(line_voc)))}
+
+voc1_n = extract_colloc_vocab(instances4,NEWSTOPWORDS,40)
+voc1_n = normalize_dict_vocab(voc1_n)
+
+voc2_n = extract_colloc_vocab(instances5,NEWSTOPWORDS,40)
+voc2_n = normalize_dict_vocab(voc2_n)
+
+voc3_n = extract_colloc_vocab(instances6,NEWSTOPWORDS,40)
+voc3_n = normalize_dict_vocab(voc3_n)
+
+voc4_n = extract_colloc_vocab(instances7,NEWSTOPWORDS,40)
+voc4_n = normalize_dict_vocab(voc4_n)
+
+voc5_n = extract_colloc_vocab(instances8,NEWSTOPWORDS,40)
+voc5_n = normalize_dict_vocab(voc5_n)
+
+voc6_n = extract_colloc_vocab(instances9,NEWSTOPWORDS,40)
+voc6_n = normalize_dict_vocab(voc6_n)
 
 
-voc9_n = extract_colloc_vocab(instances9[0:101],NEWSTOPWORDS,40)
-voc9_n = [voc9_n[i][0] for i in range(0, 40)]
+line_voc_n = dict(Counter(voc1_n)+Counter(voc2_n)+Counter(voc3_n)+Counter(voc4_n)+Counter(voc5_n)+Counter(voc6_n))
+maxim = max(line_voc_n.values())
+for key, value in line_voc_n.items():
+    		line_voc_n[key] = value / maxim
+
+LINEVOC_DICT_N = {e:(i,j) for e,i,j in zip(line_voc_n.keys(),line_voc_n.values(),range(len(line_voc_n)))}
 
 
-line_voc = set(voc4+voc5+voc6+voc7+voc8+voc9)
-LINEVOC_DICT = {e:i for e,i in zip(line_voc,range(len(line_voc)))}
-
-line_voc_n = set(voc4_n+voc5_n+voc6_n+voc7_n+voc8_n+voc9_n)
-LINEVOC_DICT_N = {e:i for e,i in zip(line_voc_n,range(len(line_voc_n)))}
 
 
-myfile = open("output_line_feat_rtnls", "w")
+j = 102
+sentence =[]
+pos = -1
+tag =[]	
+for line in open('cord_output'):
+	columns = line.split(' ')
+	if not line.strip():
+		#print instances4[j].context
+		instances4[j].context = zip(sentence,tag)
+		#print instances4[j].context
+		#print '\n'
+		if 'line' in sentence:
+			pos = sentence.index('line')
+		elif 'lines' in sentence:
+			pos = sentence.index('lines')
+		if pos == -1:
+			print j
+		instances4[j].position = pos	
+		sentence =[]
+		pos = -1
+		tag =[]	
+		j=j+1
+	elif len(columns) >=2:
+		sentence.append(columns[0])
+		tag.append(columns[1]+","+columns[2].rstrip('\n'))
+
+
+#TODO Cleanup repeated code
+
+"""
+j = 102
+sentence =[]
+pos = -1
+tag =[]	
+for line in open('division_output'):
+	columns = line.split(' ')
+	if not line.strip():
+		#print instances5[j].context
+		instances5[j].context = zip(sentence,tag)
+		#print instances5[j].context
+		#print '\n'
+		if 'line' in sentence:
+			pos = sentence.index('line')
+		elif 'lines' in sentence:
+			pos = sentence.index('lines')
+		if pos == -1:
+			print j
+		instances5[j].position = pos	
+		sentence =[]
+		pos = -1
+		tag =[]	
+		j=j+1
+	elif len(columns) >=2:
+		sentence.append(columns[0])
+		tag.append(columns[1]+","+columns[2].rstrip('\n'))
+
+j = 102
+sentence =[]
+pos = -1
+tag =[]	
+for line in open('formation_output'):
+	columns = line.split(' ')
+	if not line.strip():
+		#print instances6[j].context
+		instances6[j].context = zip(sentence,tag)
+		#print instances6[j].context
+		#print '\n'
+		if 'line' in sentence:
+			pos = sentence.index('line')
+		elif 'lines' in sentence:
+			pos = sentence.index('lines')
+		if pos == -1:
+			print j
+		instances6[j].position = pos	
+		sentence =[]
+		pos = -1
+		tag =[]	
+		j=j+1
+	elif len(columns) >=2:
+		sentence.append(columns[0])
+		tag.append(columns[1]+","+columns[2].rstrip('\n'))
+
+j = 102
+sentence =[]
+pos = -1
+tag =[]	
+for line in open('product_output'):
+	columns = line.split(' ')
+	if not line.strip():
+		#print instances7[j].context
+		instances7[j].context = zip(sentence,tag)
+		#print instances7[j].context
+		#print '\n'
+		if 'line' in sentence:
+			pos = sentence.index('line')
+		elif 'lines' in sentence:
+			pos = sentence.index('lines')
+		if pos == -1:
+			print j
+		instances7[j].position = pos	
+		sentence =[]
+		pos = -1
+		tag =[]	
+		j=j+1
+	elif len(columns) >=2:
+		sentence.append(columns[0])
+		tag.append(columns[1]+","+columns[2].rstrip('\n'))
+
+j = 102
+sentence =[]
+pos = -1
+tag =[]	
+for line in open('text_output'):
+	columns = line.split(' ')
+	if not line.strip():
+		#print instances8[j].context
+		instances8[j].context = zip(sentence,tag)
+		#print instances8[j].context
+		#print '\n'
+		if 'line' in sentence:
+			pos = sentence.index('line')
+		elif 'lines' in sentence:
+			pos = sentence.index('lines')
+		if pos == -1:
+			print j
+		instances8[j].position = pos	
+		sentence =[]
+		pos = -1
+		tag =[]	
+		j=j+1
+	elif len(columns) >=2:
+		sentence.append(columns[0])
+		tag.append(columns[1]+","+columns[2].rstrip('\n'))
+
+j = 102
+sentence =[]
+pos = -1
+tag =[]	
+for line in open('phone_output'):
+	columns = line.split(' ')
+	if not line.strip():
+		#print instances9[j].context
+		instances9[j].context = zip(sentence,tag)
+		#print instances9[j].context
+		#print '\n'
+		if 'line' in sentence:
+			pos = sentence.index('line')
+		elif 'lines' in sentence:
+			pos = sentence.index('lines')
+		if pos == -1:
+			print j
+		instances9[j].position = pos	
+		sentence =[]
+		pos = -1
+		tag =[]	
+		j=j+1
+	elif len(columns) >=2:
+		sentence.append(columns[0])
+		tag.append(columns[1]+","+columns[2].rstrip('\n'))
+
+"""
+
+"""
+myfile = open("output_line_CRFfeat", "w")
 count = 0;
-for i in instances4[0:101]:
+for i in instances4:
 	con_feat = ann_context_features(i,LINEVOC_DICT,70)
 	pos_feat = ann_pos_features(i,POS_DICT,5)
 	word_feat = ann_context_features(i,LINEVOC_DICT_N,5)
+	#rat_feat = ann_context_features(i,LINEVOC_DICT_R,70)
         feat = con_feat + pos_feat + word_feat
-	print len(feat)
+	if len(feat) == 365:	
+		print len(feat)
 	myfile.write("1cord ")	
 	for item in feat:
   	    myfile.write("%s " % item)
 	myfile.write("\n")
 	count=count+1
 
-for i in instances5[0:101]:
+for i in instances5:
 	con_feat = ann_context_features(i,LINEVOC_DICT,70)
 	pos_feat = ann_pos_features(i,POS_DICT,5)
 	word_feat = ann_context_features(i,LINEVOC_DICT_N,5)
+        #rat_feat = ann_context_features(i,LINEVOC_DICT_R,70)
         feat = con_feat + pos_feat + word_feat
-	print len(feat)
+	if len(feat) == 365:	
+		print len(feat)
 	myfile.write("2division ")	
 	for item in feat:
   	    myfile.write("%s " % item)
 	myfile.write("\n")
 	count=count+1
 
-for i in instances6[0:101]:
+for i in instances6:
 	con_feat = ann_context_features(i,LINEVOC_DICT,70)
 	pos_feat = ann_pos_features(i,POS_DICT,5)
 	word_feat = ann_context_features(i,LINEVOC_DICT_N,5)
+        #rat_feat = ann_context_features(i,LINEVOC_DICT_R,70)
         feat = con_feat + pos_feat + word_feat
-	print len(feat)
+	if len(feat) == 365:	
+		print len(feat)
 	myfile.write("3formation ")	
 	for item in feat:
   	    myfile.write("%s " % item)
 	myfile.write("\n")
 	count=count+1
 
-for i in instances7[0:101]:
+for i in instances7:
 	con_feat = ann_context_features(i,LINEVOC_DICT,70)
 	pos_feat = ann_pos_features(i,POS_DICT,5)
 	word_feat = ann_context_features(i,LINEVOC_DICT_N,5)
+        #rat_feat = ann_context_features(i,LINEVOC_DICT_R,70)
         feat = con_feat + pos_feat + word_feat
-	print len(feat)
+	if len(feat) == 365:	
+		print len(feat)
 	myfile.write("4product ")	
 	for item in feat:
   	    myfile.write("%s " % item)
 	myfile.write("\n")
 	count=count+1
 
-for i in instances8[0:101]:
+for i in instances8:
 	con_feat = ann_context_features(i,LINEVOC_DICT,70)
 	pos_feat = ann_pos_features(i,POS_DICT,5)
 	word_feat = ann_context_features(i,LINEVOC_DICT_N,5)
+        #rat_feat = ann_context_features(i,LINEVOC_DICT_R,70)
         feat = con_feat + pos_feat + word_feat
-	print len(feat)
+	if len(feat) == 365:	
+		print len(feat)
 	myfile.write("5text ")	
 	for item in feat:
   	    myfile.write("%s " % item)
 	myfile.write("\n")
 	count=count+1
 
-for i in instances9[0:101]:
+for i in instances9:
 	con_feat = ann_context_features(i,LINEVOC_DICT,70)
 	pos_feat = ann_pos_features(i,POS_DICT,5)
 	word_feat = ann_context_features(i,LINEVOC_DICT_N,5)
+        #rat_feat = ann_context_features(i,LINEVOC_DICT_R,70)
         feat = con_feat + pos_feat + word_feat
-	print len(feat)
+	if len(feat) == 365:	
+		print len(feat)
 	myfile.write("6phone ")	
 	for item in feat:
   	    myfile.write("%s " % item)
@@ -423,15 +581,17 @@ print count
 
 
 myfile.close()
-
-myfile = open("output_hard_feat_rtnls", "w")
+"""
+"""
+myfile = open("output_hard_rat_CRFfeat", "w")
 count = 0;
 
 
-for i in instances1[0:201]:
+for i in instances1:
 	con_feat = ann_context_features(i,HARDVOC_DICT,70)
 	pos_feat = ann_pos_features(i,POS_DICT,5)
 	word_feat = ann_context_features(i,HARDVOC_DICT_N,5)
+        #rat_feat = ann_context_features(i,HARDVOC_DICT_R,70)
         feat = con_feat + pos_feat + word_feat
 	print len(feat)
 	myfile.write("1HARD ")	
@@ -440,10 +600,11 @@ for i in instances1[0:201]:
 	myfile.write("\n")
 	count=count+1
 
-for i in instances2[0:201]:
+for i in instances2:
 	con_feat = ann_context_features(i,HARDVOC_DICT,70)
 	pos_feat = ann_pos_features(i,POS_DICT,5)
 	word_feat = ann_context_features(i,HARDVOC_DICT_N,5)
+        #rat_feat = ann_context_features(i,HARDVOC_DICT_R,70)
         feat = con_feat + pos_feat + word_feat
 	print len(feat)
 	myfile.write("2HARD ")	
@@ -452,10 +613,11 @@ for i in instances2[0:201]:
 	myfile.write("\n")
 	count=count+1
 
-for i in instances3[0:201]:
+for i in instances3:
 	con_feat = ann_context_features(i,HARDVOC_DICT,70)
 	pos_feat = ann_pos_features(i,POS_DICT,5)
 	word_feat = ann_context_features(i,HARDVOC_DICT_N,5)
+        #rat_feat = ann_context_features(i,HARDVOC_DICT_R,70)
         feat = con_feat + pos_feat + word_feat
 	print len(feat)
 	myfile.write("3HARD ")	
@@ -466,78 +628,68 @@ for i in instances3[0:201]:
 
 
 
-
-
+myfile.close()
 
 
 
 
 	
 print count
-""" DICT for word features - dont use stopwords """ 
+"""
+""" Generate CRF training and testing for rationales  """ 
+"""
+myfile = open("phone_train", "w")
+count = 0;
+
+for i in instances9[0:101]:
+	con = i.context	
+	for j in range(0,len(con)):
+	    word = con[j][0]
+	    if word not in NEWSTOPWORDS:	
+	    	pos = con[j][1].split(',')[0]
+	    	rat = 'NR' 
+	    	if len(con[j][1].split(',')) ==2:
+	    		rat = 'R'
+ 	    	myfile.write("%s %s %s" % (word, pos, rat))
+	    	myfile.write("\n")
+	myfile.write("\n")
+	count=count+1
 
 
+myfile.close()
 
-##def wst_classifier(trainer, word, features,number=300):
-##    print "Reading data..."
-##    global _inst_cache
-##    if word not in _inst_cache:
-##        _inst_cache[word] = [(i, i.senses[0]) for i in senseval.instances(word)]
-##    events = _inst_cache[word][:]
-##    senses = list(set(l for (i, l) in events))
-##    instances = [i for (i, l) in events]
-##    vocab = extract_vocab(instances, n=number)
-##    print ' Senses: ' + ' '.join(senses)
-##
-##    # Split the instances into a training and test set,
-##    #if n > len(events): n = len(events)
-##    n = len(events)
-##    random.seed(5444522)
-##    random.shuffle(events)
-##    training_data = events[:int(0.8 * n)]
-##    test_data = events[int(0.8 * n):n]
-##    # Train classifier
-##    print 'Training classifier...'
-##    classifier = trainer([(features(i, vocab), label) for (i, label) in training_data])
-##    # Test classifier
-##    print 'Testing classifier...'
-##    acc = accuracy(classifier, [(features(i, vocab), label) for (i, label) in test_data] )
-##    print 'Accuracy: %6.4f' % acc
+print count
 
+"""
+"""
+myfile = open("phone_test", "w")
+count = 0;
+
+for i in instances9[102:len(instances9)]:
+	con = i.context	
+	for j in range(0,len(con)):
+	    word = con[j][0]	
+	    if word not in NEWSTOPWORDS and len(con[j])>1:
+	    	pos = con[j][1].split(',')[0]
+	    	rat = 'NR' 
+	    	if len(con[j][1].split(',')) > 1:
+	    		rat = 'R'
+ 	    	myfile.write("%s %s" % (pos, word))
+	    	myfile.write("\n")
+	myfile.write("\n")
+	count=count+1
+
+
+myfile.close()
+
+print count
+"""
+
+
+#Base line Naive Bayes Classifier test
     
-def wst_classifier(trainer, word, features, stopwords_list = STOPWORDS, number=300, log=False, distance=3, confusion_matrix=False):
-    """
-    This function takes as arguments:
-        a trainer (e.g., NaiveBayesClassifier.train);
-        a target word from senseval2 (you can find these out with senseval.fileids(),
-            and they are 'hard.pos', 'interest.pos', 'line.pos' and 'serve.pos');
-        a feature set (this can be wsd_context_features or wsd_word_features);
-        a number (defaults to 300), which determines for wsd_word_features the number of
-            most frequent words within the context of a given sense that you use to classify examples;
-        a distance (defaults to 3) which determines the size of the window for wsd_context_features (if distance=3, then
-            wsd_context_features gives 3 words and tags to the left and 3 words and tags to
-            the right of the target word);
-        log (defaults to false), which if set to True outputs the errors into a file errors.txt
-        confusion_matrix (defaults to False), which if set to True prints a confusion matrix.
-
-    Calling this function splits the senseval data for the word into a training set and a test set (the way it does
-    this is the same for each call of this function, because the argument to random.seed is specified,
-    but removing this argument would make the training and testing sets different each time you build a classifier).
-
-    It then trains the trainer on the training set to create a classifier that performs WSD on the word,
-    using features (with number or distance where relevant).
-
-    It then tests the classifier on the test set, and prints its accuracy on that set.
-
-    If log==True, then the errors of the classifier over the test set are written to errors.txt.
-    For each error four things are recorded: (i) the example number within the test data (this is simply the index of the
-    example within the list test_data); (ii) the sentence that the target word appeared in, (iii) the
-    (incorrect) derived label, and (iv) the gold label.
-
-    If confusion_matrix==True, then calling this function prints out a confusion matrix, where each cell [i,j]
-    indicates how often label j was predicted when the correct label was i (so the diagonal entries indicate labels
-    that were correctly predicted).
-    """
+def wsd_classifier(trainer, word, features, stopwords_list = STOPWORDS, number=300, log=False, distance=3, confusion_matrix=False):
+    
     print "Reading data..."
     global _inst_cache
     if word not in _inst_cache:
@@ -597,23 +749,5 @@ def wst_classifier(trainer, word, features, stopwords_list = STOPWORDS, number=3
         
         
     
-def demo():
-    print "NB, with features based on 300 most frequent context words"
-    wst_classifier(NaiveBayesClassifier.train, 'hard.pos', wsd_word_features)
-    print
-    print "NB, with features based word + pos in 6 word window"
-    wst_classifier(NaiveBayesClassifier.train, 'hard.pos', wsd_context_features)
-    print
-##    print "MaxEnt, with features based word + pos in 6 word window"
-##    wst_classifier(MaxentClassifier.train, 'hard.pos', wsd_context_features)
-    
 
-
-# Frequency Baseline
-##hard_sense_fd = nltk.FreqDist([i.senses[0] for i in senseval.instances('hard.pos')])
-##most_frequent_hard_sense= hard_sense_fd.keys()[0]
-##frequency_hard_sense_baseline = hard_sense_fd.freq(hard_sense_fd.keys()[0])
-
-##>>> frequency_hard_sense_baseline
-##0.79736902838679902
 
